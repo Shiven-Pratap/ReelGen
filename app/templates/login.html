@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Login Page
+{% endblock %}
+
+
+
+{% block content %}
+<form action="/login" method="POST" class="login-form" autocomplete="off">
+    <h2 style="text-align: center;">Login Form</h2>
+
+    <div class="input-box">
+        <input type="email" name="email" class="input-field" id="log-email" placeholder=" " required>
+        <label for="log-email" class="label">Email</label>
+        <i class='bx bx-envelope icon2'></i>
+    </div>
+    <div class="input-box">
+        <input type="password" name="password" class="input-field" id="log-pass" placeholder=" " required>
+        <label for="log-pass" class="label">Password</label>
+        <i class='bx bx-lock-alt icon2'></i>
+    </div>
+    <div class="input-box">
+        <button class="btn-submit" id="SignInBtn" type="submit">Sign In <i class='bx bx-log-in'></i></button>
+    </div>
+</form>
+<span class="kk"><a href="{{ url_for('auth.register') }}">Register Instead</a></span>
+{% endblock %}
+
+{% block script %}
+<style>
+    .login-form {
+        max-width: 400px;
+        margin: 20px auto;
+        background: #fff;
+        padding: 30px 25px;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .input-box {
+        position: relative;
+        width: 100%;
+    }
+    .input-field {
+        width: 100%;
+        padding: 12px 40px 12px 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+        outline: none;
+        background: transparent;
+    }
+    .input-field:focus {
+        border-color: #007bff;
+    }
+    .label {
+        position: absolute;
+        top: 50%;
+        left: 12px;
+        transform: translateY(-50%);
+        background-color: #fff;
+        padding: 0 5px;
+        color: #aaa;
+        pointer-events: none;
+        transition: 0.3s;
+    }
+    .input-field:focus+.label,
+    .input-field:not(:placeholder-shown)+.label {
+        top: -8px;
+        font-size: 12px;
+        color: #007bff;
+    }
+    .icon2 {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+        color: #888;
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .btn-submit:hover {
+        background-color: #0056b3;
+    }
+    .kk a{
+        display: block;
+        text-align: center;
+        margin-top: 6px;
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 600;
+        width: 50%;
+        background: #aaa;
+        border-radius: 5px;
+        margin: auto;
+        padding: 5px;   
+    }
+    .kk a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+{% endblock %}

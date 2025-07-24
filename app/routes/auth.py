@@ -1,8 +1,8 @@
 from flask import Flask,render_template,request,session,redirect,url_for,Blueprint,flash
 import re
 from app import db
-from models import User
-from app.routes import upload
+from app.models import User
+# from app.routes import upload
 
 auth_bp=Blueprint('auth',__name__)
 
@@ -34,8 +34,10 @@ def register():
         new_user=User(name=username,email=email,password=password)
         db.session.add(new_user)
         db.session.commit()
+        print("Registration Successfull.")
         flash("Registration Successfull.",'success')
         return redirect(url_for("auth.login"))
+    
     return render_template("register.html")
     
     
@@ -61,9 +63,10 @@ def login():
         session['user_id']=user.id
         session['username']=user.name
         flash("Login successful!", "success")
-        return redirect("upload.home")
+        return redirect(url_for("upload.home"))
+    return render_template("login.html")
 
-@auth_bp.route("/logout",methods=["POST"])
+@auth_bp.route("/logout",methods=["POST","GET"])
 def logout():
     session.pop('user_id', None)
     session.pop('username', None)

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Registration Page
+{% endblock %}
+
+{% block content %}
+    <div class="main">
+        <form action="/register" method="post">
+            <h2 style="text-align: center;">Registration Form</h2>
+            <div class="input-box">
+                <input type="text" name="username" class="input-field" id="reg-name" placeholder=" " required>
+                <label for="reg-name" class="label">Username</label>
+                <i class='bx bx-user icon3'></i>
+            </div>
+            <div class="input-box">
+                <input type="email" name="email" class="input-field" id="reg-email"placeholder=" " required>
+                <label for="reg-email" class="label">Email</label>
+                <i class='bx bx-envelope icon3'></i>
+            </div>
+            <div class="input-box">
+                <input type="password" name="password" class="input-field" id="reg-pass" placeholder=" " required>
+                <label for="reg-pass" class="label">Password</label>
+                <i class='bx bx-lock-alt icon3'></i>
+            </div>  
+            <div class="input-box">
+                <button class="btn-submit" id="SignUpBtn" type="submit" >Sign Up <i class='bx bx-user-plus'></i></button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <style>
+  .main {
+    max-width: 400px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 30px 25px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .input-box {
+    position: relative;
+    width: 100%;
+  }
+  .input-field {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    outline: none;
+    background: transparent;
+  }
+  .input-field:focus {
+    border-color: #007bff;
+  }
+  .label {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    background-color: #fff;
+    padding: 0 5px;
+    color: #aaa;
+    pointer-events: none;
+    transition: 0.3s;
+  }
+  .input-field:focus + .label,
+  .input-field:not(:placeholder-shown) + .label {
+    top: -8px;
+    font-size: 12px;
+    color: #007bff;
+  }
+  .icon3 {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: #888;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .btn-submit:hover {
+    background-color: #0056b3;
+  }
+  span a {
+    display: block;
+    text-align: center;
+    margin-top: 15px;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  span a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+{% endblock %}

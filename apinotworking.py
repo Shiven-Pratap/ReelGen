@@ -4,14 +4,13 @@ import os
 from datetime import datetime
 import shutil
 from moviepy import *
+from moviepy import *
 from PIL import Image
 import numpy as np
 from flask import Flask, Blueprint, render_template, request, redirect, flash, url_for, session
 from app import db
 import requests
 import tempfile
-from gtts import gTTS
-import io
 
 upload_bp = Blueprint("upload", __name__)
 
@@ -19,12 +18,9 @@ UPLOAD_FOLDER = 'app/static/uploads'
 REEL_FOLDER = 'app/static/reels'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
-# ElevenLabs API Configuration (backup option)
-ELEVENLABS_API_KEY = "your_elevenlabs_api_key_here"
-ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
-
-# Use Google TTS as primary (free) option
-USE_GOOGLE_TTS = True
+# ElevenLabs API Configuration - Replace with your actual API key
+ELEVENLABS_API_KEY = "sk_7b791f26662f162706ff4e47bcb28c9e1f2829fa4afafcff"
+ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Default voice ID (Rachel)
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(REEL_FOLDER, exist_ok=True)
@@ -34,7 +30,7 @@ def allowed_file(filename):
 
 def generate_audio_from_text(text, output_path):
     """
-    Generate audio from text using Google TTS (free) or ElevenLabs API (paid)
+    Generate audio from text using ElevenLabs API
     """
     if not text or not text.strip():
         print("No text provided for audio generation")
@@ -42,18 +38,6 @@ def generate_audio_from_text(text, output_path):
     
     print(f"Generating audio for text: {text[:50]}...")
     
-    if USE_GOOGLE_TTS:
-        try:
-            print("Using Google Text-to-Speech...")
-            tts = gTTS(text=text.strip(), lang='en', slow=False)
-            tts.save(output_path)
-            print(f"Google TTS audio saved to: {output_path}")
-            return output_path
-        except Exception as e:
-            print(f"Google TTS failed: {e}")
-            print("Falling back to ElevenLabs...")
-    
-    # Fallback to ElevenLabs
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
     
     headers = {
@@ -85,7 +69,7 @@ def generate_audio_from_text(text, output_path):
         with open(output_path, 'wb') as f:
             f.write(response.content)
         
-        print(f"ElevenLabs audio saved to: {output_path}")
+        print(f"Audio saved to: {output_path}")
         return output_path
     except requests.exceptions.RequestException as e:
         print(f"Error generating audio: {e}")
@@ -114,61 +98,46 @@ def generate_reel():
     
     def smart_resize_image(img, target_size):
         """
-        Smart resize that uses the entire image:
-        - For wider images: Takes the full width and crops height from center
-        - For taller images: Takes the full height and crops width from center
-        - Maintains the original image content without compression
+        Smart resize that maintains aspect ratio and crops intelligently
         """
         original_width, original_height = img.size
         original_aspect_ratio = original_width / original_height
         target_width, target_height = target_size
-        target_aspect_ratio = target_width / target_height
         
         if original_aspect_ratio > target_aspect_ratio:
-            # Image is wider than target - use full width, crop height
-            # Scale based on width to use the entire width
-            scale_factor = target_width / original_width
-            new_width = target_width
-            new_height = int(original_height * scale_factor)
-            
-            # Resize to new dimensions
-            img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-            # If the scaled height is greater than target, crop from center
-            if new_height > target_height:
-                top = (new_height - target_height) // 2
-                bottom = top + target_height
-                img_cropped = img_resized.crop((0, top, new_width, bottom))
-                return img_cropped
-            else:
-                # If scaled height is less than target, add padding
-                result = Image.new('RGB', target_size, (0, 0, 0))
-                y_offset = (target_height - new_height) // 2
-                result.paste(img_resized, (0, y_offset))
-                return result
-                
-        elif original_aspect_ratio < target_aspect_ratio:
-            # Image is taller than target - use full height, crop width
-            # Scale based on height to use the entire height
+            # Image is wider than target - crop width (center crop)
+            # Scale based on height
             scale_factor = target_height / original_height
             new_width = int(original_width * scale_factor)
             new_height = target_height
             
-            # Resize to new dimensions
+            # Resize maintaining aspect ratio
             img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
             
-            # If the scaled width is greater than target, crop from center
-            if new_width > target_width:
-                left = (new_width - target_width) // 2
-                right = left + target_width
-                img_cropped = img_resized.crop((left, 0, right, new_height))
-                return img_cropped
-            else:
-                # If scaled width is less than target, add padding
-                result = Image.new('RGB', target_size, (0, 0, 0))
-                x_offset = (target_width - new_width) // 2
-                result.paste(img_resized, (x_offset, 0))
-                return result
+            # Center crop to target width
+            left = (new_width - target_width) // 2
+            right = left + target_width
+            img_cropped = img_resized.crop((left, 0, right, new_height))
+            
+            return img_cropped
+            
+        elif original_aspect_ratio < target_aspect_ratio:
+            # Image is taller than target - crop height (center crop)
+            # Scale based on width
+            scale_factor = target_width / original_width
+            new_width = target_width
+            new_height = int(original_height * scale_factor)
+            
+            # Resize maintaining aspect ratio
+            img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Center crop to target height
+            top = (new_height - target_height) // 2
+            bottom = top + target_height
+            img_cropped = img_resized.crop((0, top, new_width, bottom))
+            
+            return img_cropped
+            
         else:
             # Perfect aspect ratio match - just resize
             return img.resize(target_size, Image.Resampling.LANCZOS)
@@ -212,11 +181,11 @@ def generate_reel():
             # Load and process image
             img = Image.open(save_path).convert("RGB")
             
-            # Use smart resize to utilize the entire image content
-            processed_img = smart_resize_image(img, target_size)
+            # Option 1: Fit entire image with padding (preserves full image)
+            processed_img = fit_resize_with_padding(img, target_size, bg_color=(0, 0, 0))
             
-            # Alternative: Use fit with padding (uncomment to use padding instead)
-            # processed_img = fit_resize_with_padding(img, target_size, bg_color=(0, 0, 0))
+            # Option 2: Smart crop (uncomment to use instead if you prefer cropping)
+            # processed_img = smart_resize_image(img, target_size)
             
             image_arrays.append(np.array(processed_img))
     
@@ -261,26 +230,22 @@ def generate_reel():
     
     if audio_duration > 0:
         print(f"Creating video with audio. Duration: {audio_duration}s, Images: {len(image_arrays)}")
-        
-        # Calculate how many times we need to loop the images to fill the audio duration
-        # At 1 FPS, each image shows for 1 second
+        # Calculate how long each image should be displayed
         num_images = len(image_arrays)
-        total_frames_needed = int(audio_duration)  # 1 FPS means 1 frame per second
+        image_duration = audio_duration / num_images
+        print(f"Each image will show for: {image_duration} seconds")
         
-        # Create a looped sequence of images to match audio duration
-        looped_images = []
-        for frame_index in range(total_frames_needed):
-            image_index = frame_index % num_images  # Loop through images
-            looped_images.append(image_arrays[image_index])
+        # Create video clips for each image
+        clips = []
+        for i, img_array in enumerate(image_arrays):
+            clip = ImageClip(img_array, duration=image_duration)
+            clips.append(clip)
+            print(f"Created clip {i+1}/{num_images}")
         
-        print(f"Total frames needed: {total_frames_needed}")
-        print(f"Images will loop {total_frames_needed // num_images} times with {total_frames_needed % num_images} extra frames")
-        
-        # Create video clip from looped images at 1 FPS
-        video_clip = ImageSequenceClip(looped_images, fps=1)
-        
-        # Ensure video duration matches audio duration exactly
-        video_clip = video_clip.with_duration(audio_duration)
+        # Concatenate all image clips and set FPS
+        print("Concatenating video clips...")
+        video_clip = concatenate_videoclips(clips, method="compose")
+        video_clip = video_clip.with_fps(24)  # Set FPS for the video
         
         # Add audio to the video
         print("Adding audio to video...")
@@ -294,7 +259,11 @@ def generate_reel():
             reel_path, 
             codec='libx264',
             audio_codec='aac',
-            fps=1
+            fps=24,
+            temp_audiofile='temp-audio.m4a',
+            remove_temp=True,
+            verbose=True,
+            logger='bar'
         )
         
         # Close clips to free memory
