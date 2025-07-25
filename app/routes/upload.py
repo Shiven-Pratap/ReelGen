@@ -11,7 +11,8 @@ from app import db
 import requests
 import tempfile
 from gtts import gTTS
-import io
+from sarvamai import SarvamAI
+from sarvamai.play import save
 
 upload_bp = Blueprint("upload", __name__)
 
@@ -19,11 +20,7 @@ UPLOAD_FOLDER = 'app/static/uploads'
 REEL_FOLDER = 'app/static/reels'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
-# ElevenLabs API Configuration (backup option)
-ELEVENLABS_API_KEY = "your_elevenlabs_api_key_here"
-ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 
-# Use Google TTS as primary (free) option
 USE_GOOGLE_TTS = True
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -33,63 +30,33 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def generate_audio_from_text(text, output_path):
-    """
-    Generate audio from text using Google TTS (free) or ElevenLabs API (paid)
-    """
+
     if not text or not text.strip():
         print("No text provided for audio generation")
         return None
     
     print(f"Generating audio for text: {text[:50]}...")
     
-    if USE_GOOGLE_TTS:
-        try:
-            print("Using Google Text-to-Speech...")
-            tts = gTTS(text=text.strip(), lang='en', slow=False)
-            tts.save(output_path)
-            print(f"Google TTS audio saved to: {output_path}")
-            return output_path
-        except Exception as e:
-            print(f"Google TTS failed: {e}")
-            print("Falling back to ElevenLabs...")
-    
-    # Fallback to ElevenLabs
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
-    
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": ELEVENLABS_API_KEY
-    }
-    
-    data = {
-        "text": text.strip(),
-        "model_id": "eleven_monolingual_v1",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.5
-        }
-    }
-    
+    client = SarvamAI(
+    api_subscription_key="sk_m2h9oxpa_OW0LglLbgQrlb19dqZhxMGoi",
+    )
+
     try:
-        print("Making request to ElevenLabs API...")
-        response = requests.post(url, json=data, headers=headers)
-        print(f"Response status code: {response.status_code}")
-        
-        if response.status_code != 200:
-            print(f"API Error: {response.text}")
-            return None
-            
-        response.raise_for_status()
-        
-        with open(output_path, 'wb') as f:
-            f.write(response.content)
-        
-        print(f"ElevenLabs audio saved to: {output_path}")
+        audio = client.text_to_speech.convert(
+            target_language_code="en-IN", 
+            text=text.strip(),
+            model="bulbul:v2",
+            speaker="anushka"
+        )
+        save(audio, output_path)
+        print(f"Audio saved to {output_path}")
         return output_path
-    except requests.exceptions.RequestException as e:
-        print(f"Error generating audio: {e}")
+
+    except Exception as e:
+        print(f"Sarvam TTS failed: {e}")
         return None
+
+    
 
 @upload_bp.route("/")
 def home():
@@ -109,16 +76,10 @@ def generate_reel():
     user_upload_dir = os.path.join(UPLOAD_FOLDER, str(user_id))
     os.makedirs(user_upload_dir, exist_ok=True)
     image_arrays = []
-    target_size = (720, 1280)  # width, height
-    target_aspect_ratio = target_size[0] / target_size[1]  # 0.5625
+    target_size = (720, 1280)  
+    target_aspect_ratio = target_size[0] / target_size[1] 
     
     def smart_resize_image(img, target_size):
-        """
-        Smart resize that uses the entire image:
-        - For wider images: Takes the full width and crops height from center
-        - For taller images: Takes the full height and crops width from center
-        - Maintains the original image content without compression
-        """
         original_width, original_height = img.size
         original_aspect_ratio = original_width / original_height
         target_width, target_height = target_size
@@ -173,50 +134,17 @@ def generate_reel():
             # Perfect aspect ratio match - just resize
             return img.resize(target_size, Image.Resampling.LANCZOS)
     
-    def fit_resize_with_padding(img, target_size, bg_color=(0, 0, 0)):
-        """
-        Alternative: Resize to fit within target size and add padding
-        """
-        original_width, original_height = img.size
-        target_width, target_height = target_size
-        
-        # Calculate scale factor to fit image within target size
-        scale_factor = min(target_width / original_width, target_height / original_height)
-        
-        # Calculate new dimensions
-        new_width = int(original_width * scale_factor)
-        new_height = int(original_height * scale_factor)
-        
-        # Resize image
-        img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        
-        # Create new image with target size and background color
-        result = Image.new('RGB', target_size, bg_color)
-        
-        # Calculate position to center the resized image
-        x_offset = (target_width - new_width) // 2
-        y_offset = (target_height - new_height) // 2
-        
-        # Paste resized image onto the background
-        result.paste(img_resized, (x_offset, y_offset))
-        
-        return result
     
-    # Process uploaded images
     for file in uploaded_files:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             save_path = os.path.join(user_upload_dir, filename)
             file.save(save_path)
             
-            # Load and process image
             img = Image.open(save_path).convert("RGB")
             
-            # Use smart resize to utilize the entire image content
             processed_img = smart_resize_image(img, target_size)
             
-            # Alternative: Use fit with padding (uncomment to use padding instead)
-            # processed_img = fit_resize_with_padding(img, target_size, bg_color=(0, 0, 0))
             
             image_arrays.append(np.array(processed_img))
     
@@ -224,7 +152,6 @@ def generate_reel():
         flash("No valid images uploaded.", "danger")
         return redirect(url_for("upload.home"))
     
-    # Create temporary audio file
     audio_path = None
     audio_duration = 0
     
@@ -232,7 +159,7 @@ def generate_reel():
     
     if audio_text and audio_text.strip():
         print("Creating temporary audio file...")
-        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
         audio_path = generate_audio_from_text(audio_text, temp_audio.name)
         temp_audio.close()
         
@@ -241,7 +168,6 @@ def generate_reel():
             print(f"Audio file size: {os.path.getsize(audio_path)} bytes")
             
             try:
-                # Get audio duration
                 audio_clip = AudioFileClip(audio_path)
                 audio_duration = audio_clip.duration
                 print(f"Audio duration: {audio_duration} seconds")
@@ -255,40 +181,32 @@ def generate_reel():
     else:
         print("No audio text provided")
     
-    # Generate video filename
     reel_name = f"reel_{str(datetime.utcnow().timestamp()).replace('.', '_')}.mp4"
     reel_path = os.path.join(REEL_FOLDER, reel_name)
     
     if audio_duration > 0:
         print(f"Creating video with audio. Duration: {audio_duration}s, Images: {len(image_arrays)}")
-        
-        # Calculate how many times we need to loop the images to fill the audio duration
-        # At 1 FPS, each image shows for 1 second
+
         num_images = len(image_arrays)
-        total_frames_needed = int(audio_duration)  # 1 FPS means 1 frame per second
+        total_frames_needed = int(audio_duration)  
         
-        # Create a looped sequence of images to match audio duration
         looped_images = []
         for frame_index in range(total_frames_needed):
-            image_index = frame_index % num_images  # Loop through images
+            image_index = frame_index % num_images 
             looped_images.append(image_arrays[image_index])
         
         print(f"Total frames needed: {total_frames_needed}")
         print(f"Images will loop {total_frames_needed // num_images} times with {total_frames_needed % num_images} extra frames")
         
-        # Create video clip from looped images at 1 FPS
         video_clip = ImageSequenceClip(looped_images, fps=1)
         
-        # Ensure video duration matches audio duration exactly
         video_clip = video_clip.with_duration(audio_duration)
         
-        # Add audio to the video
         print("Adding audio to video...")
         audio_clip = AudioFileClip(audio_path)
         print(f"Audio clip duration: {audio_clip.duration}")
         final_clip = video_clip.with_audio(audio_clip)
         
-        # Write the final video with audio
         print("Writing final video file...")
         final_clip.write_videofile(
             reel_path, 
@@ -297,23 +215,19 @@ def generate_reel():
             fps=1
         )
         
-        # Close clips to free memory
         video_clip.close()
         audio_clip.close()
         final_clip.close()
         
-        # Clean up temporary audio file
         if os.path.exists(audio_path):
             os.unlink(audio_path)
             print("Cleaned up temporary audio file")
     else:
         print("No audio - creating video without sound")
-        # No audio - create video with images at 1 FPS (original behavior)
         clip = ImageSequenceClip(image_arrays, fps=1)
         clip.write_videofile(reel_path, codec='libx264')
         clip.close()
     
-    # Save to database
     new_video = UserData(
         video_filename=reel_name,
         video_title=reel_title,
@@ -322,7 +236,6 @@ def generate_reel():
     db.session.add(new_video)
     db.session.commit()
     
-    # Clean up uploaded files
     shutil.rmtree(user_upload_dir)
     
     flash("Reel generated successfully!", "success")
