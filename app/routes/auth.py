@@ -2,7 +2,6 @@ from flask import Flask,render_template,request,session,redirect,url_for,Bluepri
 import re
 from app import db
 from app.models import User
-# from app.routes import upload
 
 auth_bp=Blueprint('auth',__name__)
 

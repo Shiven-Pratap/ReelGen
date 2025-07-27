@@ -10,7 +10,6 @@ from flask import Flask, Blueprint, render_template, request, redirect, flash, u
 from app import db
 import requests
 import tempfile
-from gtts import gTTS
 from sarvamai import SarvamAI
 from sarvamai.play import save
 
@@ -38,7 +37,7 @@ def generate_audio_from_text(text, output_path):
     print(f"Generating audio for text: {text[:50]}...")
     
     client = SarvamAI(
-    api_subscription_key="sk_m2h9oxpa_OW0LglLbgQrlb19dqZhxMGoi",
+    api_subscription_key=os.getenv("SARVAM_API_KEY"),
     )
 
     try:

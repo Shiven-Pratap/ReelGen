@@ -1,0 +1,8 @@
+Flask
+Flask-SQLAlchemy
+Werkzeug
+moviepy
+Pillow
+numpy
+requests
+sarvamai
