@@ -3,83 +3,90 @@
 {% block title %}ReelGenerator{% endblock %}
 
 {% block content %}
-  <h2>Upload Images to Generate Reel</h2>
-  <form method="POST" action="{{ url_for('upload.generate_reel') }}" enctype="multipart/form-data" id="uploadForm">
-    <input type="file" id="imageInput" multiple name="images[]">
-    <div class="preview-container" id="preview"></div>
-    <input type="text" name="Reel-title" id="reelname" placeholder="Reel Name?">
-    <textarea name="audio" id="audio" placeholder="Enter text for audio narration" style="width:100%; height:20vh;"></textarea>
-    <button type="submit">Generate Reel</button>
-  </form>
+<h2>Upload Images to Generate Reel</h2>
+<form method="POST" action="{{ url_for('upload.generate_reel') }}" enctype="multipart/form-data" id="uploadForm">
+  <input type="file" id="imageInput" multiple name="images[]">
+  <div class="preview-container" id="preview"></div>
+  <input type="text" name="Reel-title" id="reelname" placeholder="Reel Name?">
+  <textarea name="audio" id="audio" placeholder="Enter text for audio narration"
+    style="width:100%; height:20vh;"></textarea>
+  <button type="submit">Generate Reel</button>
+</form>
 {% endblock %}
 
 {% block script %}
 <script>
-   const imageInput = document.getElementById("imageInput");
-    const preview = document.getElementById("preview");
-    let imageFiles = [];
 
-    imageInput.addEventListener("change", (event) => {
-      const files = Array.from(event.target.files);
-      imageFiles.push(...files);
-      renderPreviews();
-    });
+  const imageInput = document.getElementById("imageInput");
+  const preview = document.getElementById("preview");
+  let imageFiles = [];
 
-    function renderPreviews() {
-      preview.innerHTML = "";
-      imageFiles.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const imgBox = document.createElement("div");
-          imgBox.classList.add("img-box");
+  imageInput.addEventListener("change", (event) => {
+    const files = Array.from(event.target.files);
+    imageFiles.push(...files);
+    renderPreviews();
+  });
 
-          const img = document.createElement("img");
-          img.src = e.target.result;
+  function renderPreviews() {
+    preview.innerHTML = "";
+    imageFiles.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imgBox = document.createElement("div");
+        imgBox.classList.add("img-box");
 
-          const removeBtn = document.createElement("button");
-          removeBtn.className = "remove-btn";
-          removeBtn.innerHTML = "×";
-          removeBtn.onclick = () => {
-            imageFiles.splice(index, 1);
-            renderPreviews();
-          };
+        const img = document.createElement("img");
+        img.src = e.target.result;
 
-          imgBox.appendChild(img);
-          imgBox.appendChild(removeBtn);
-          preview.appendChild(imgBox);
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "remove-btn";
+        removeBtn.innerHTML = "×";
+        removeBtn.onclick = () => {
+          imageFiles.splice(index, 1);
+          renderPreviews();
         };
-        reader.readAsDataURL(file);
-      });
-    }
 
-    document.getElementById("uploadForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-      
-      const formData = new FormData();
-      
-      // Add images
-      imageFiles.forEach(file => formData.append("images[]", file));
-      
-      // Add reel title and audio text
-      const reelTitle = document.getElementById("reelname").value;
-      const audioText = document.getElementById("audio").value;
-      
-      formData.append("Reel-title", reelTitle);
-      formData.append("audio", audioText);
+        imgBox.appendChild(img);
+        imgBox.appendChild(removeBtn);
+        preview.appendChild(imgBox);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
-      // Show loading state
-      const submitBtn = document.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.textContent = 'Generating Reel...';
-      submitBtn.disabled = true;
 
-      fetch("{{ url_for('upload.generate_reel') }}", {
-        method: "POST",
-        body: formData
-      })
+    // Example usage:
+    // showCustomAlert('Important Notice', 'This is a custom alert box!');
+
+  document.getElementById("uploadForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const formData = new FormData();
+
+    // Add images
+    imageFiles.forEach(file => formData.append("images[]", file));
+
+    // Add reel title and audio text
+    const reelTitle = document.getElementById("reelname").value;
+    const audioText = document.getElementById("audio").value;
+
+    formData.append("Reel-title", reelTitle);
+    formData.append("audio", audioText);
+
+    // Show loading state
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Generating Reel...';
+    submitBtn.disabled = true;
+
+    fetch("{{ url_for('upload.generate_reel') }}", {
+      method: "POST",
+      body: formData
+    })
       .then(response => {
         if (response.redirected) {
-          window.location.href = response.url;
+          window.location.href = response.url; 
+          alert("Reel uploaded to Gallery")   
         } else {
           // Reset button if there's an error
           submitBtn.textContent = originalText;
@@ -92,9 +99,11 @@
         submitBtn.disabled = false;
         alert('An error occurred while generating the reel. Please try again.');
       });
-    });
+
+  });
 </script>
 <style>
+
   form {
     border: 2px solid #ccc;
     padding: 20px;
@@ -106,10 +115,12 @@
     flex-direction: column;
     gap: 20px;
   }
+
   #imageInput {
     padding: 8px;
     font-size: 16px;
   }
+
   .preview-container {
     display: flex;
     flex-wrap: wrap;
@@ -120,6 +131,7 @@
     padding: 10px;
     border-radius: 8px;
   }
+
   .img-box {
     position: relative;
     width: 100px;
@@ -128,13 +140,15 @@
     border: 1px solid #ddd;
     border-radius: 6px;
     overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
+
   .img-box img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+
   .remove-btn {
     position: absolute;
     top: 2px;
@@ -149,17 +163,21 @@
     line-height: 18px;
     cursor: pointer;
   }
-  #reelname, #audio {
+
+  #reelname,
+  #audio {
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 16px;
     font-family: inherit;
   }
+
   #audio {
     resize: vertical;
     min-height: 100px;
   }
+
   button[type="submit"] {
     padding: 10px 20px;
     background-color: #007bff;
@@ -171,9 +189,11 @@
     align-self: center;
     transition: background-color 0.3s ease;
   }
+
   button[type="submit"]:hover:not(:disabled) {
     background-color: #0056b3;
   }
+
   button[type="submit"]:disabled {
     background-color: #6c757d;
     cursor: not-allowed;

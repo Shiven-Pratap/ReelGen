@@ -19,8 +19,9 @@
             </div>
             <div class="functions">
                 {% if 'user_id' in session %}
-                <span><a href="{{ url_for('auth.logout') }}">Logout</a></span>
+                <span><a href="{{ url_for('upload.home') }}">Home</a></span>
                 <span><a href="{{ url_for('gallery.gallery') }}">Gallery</a></span>
+                <span><a href="{{ url_for('auth.logout') }}">Logout</a></span>
                 {% else %}
                 <span><a href="{{ url_for('auth.login') }}">Login</a></span>
                 {% endif %}
